@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>予約変更・キャンセル申請サポート | Reina歯科医院</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: #f8fafc; color: #334155; margin: 0; padding: 16px; display: flex; flex-direction: column; min-height: 100vh; justify-content: space-between; box-sizing: border-box; }
+        .container { max-width: 400px; width: 100%; margin: 0 auto; }
+        .header { text-align: center; margin-bottom: 24px; }
+        .header h1 { font-size: 20px; font-weight: 900; color: #0f172a; margin: 0; }
+        .header p { font-size: 12px; font-weight: 700; color: #059669; margin: 4px 0 0 0; }
+        .card { bg-color: #ffffff; background: white; border: 1px solid #e2e8f0; border-radius: 16px; padding: 20px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+        .card h2 { font-size: 14px; font-weight: 700; color: #0f172a; margin: 0 0 12px 0; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px; }
+        .label { display: block; font-size: 12px; font-weight: 700; color: #64748b; margin-bottom: 6px; }
+        select { w-width: 100%; width: 100%; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px; font-size: 14px; font-weight: 700; color: #0f172a; outline: none; margin-bottom: 16px; box-sizing: border-box; -webkit-appearance: none; appearance: none; }
+        .hidden { display: none !important; }
+        .alert { padding: 16px; border-radius: 12px; text-align: center; font-weight: 700; margin-bottom: 16px; }
+        .alert-title { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; }
+        .alert-amount { font-size: 20px; font-weight: 900; }
+        .action-box { background-color: #f8fafc; border-radius: 12px; padding: 16px; margin-bottom: 16px; }
+        .action-box span { display: block; font-size: 11px; font-weight: 700; color: #64748b; margin-bottom: 6px; }
+        .action-box p { font-size: 13px; font-weight: 700; color: #1e293b; margin: 0; line-height: 1.6; }
+        .btn { display: block; text-align: center; font-weight: 700; padding: 14px; border-radius: 12px; text-decoration: none; margin-bottom: 8px; font-size: 14px; }
+        .btn-dark { background-color: #0f172a; color: white; }
+        .btn-line { background-color: #06C755; color: white; }
+        .btn-rose { background-color: #e11d48; color: white; }
+        .btn-emerald { background-color: #059669; color: white; }
+        footer { text-align: center; font-size: 10px; color: #94a3b8; line-height: 1.5; padding: 16px 0; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="header">
+            <h1>Reina歯科医院</h1>
+            <p>予約変更・キャンセル申請サポート</p>
+        </div>
+
+        <!-- ステップ1 -->
+        <div class="card">
+            <h2>📅 1. ご予約の状況を選択してください</h2>
+            
+            <label class="label">ご予約の日時はいつですか？</label>
+            <select id="time-status" onchange="checkRule()">
+                <option value="">-- タップして選択 --</option>
+                <option value="normal">ご予約日の3日前まで</option>
+                <option value="tomorrow">ご予約の前日（診療時間内）</option>
+                <option value="today-urgent">本日（当日キャンセル・無断）</option>
+            </select>
+
+            <label class="label">キャンセル・変更の理由は？</label>
+            <select id="reason-status" onchange="checkRule()">
+                <option value="">-- タップして選択 --</option>
+                <option value="personal">自己都合（予定変更・忘れていた等）</option>
+                <option value="illness">急な発熱・体調不良・入院</option>
+                <option value="disaster">自然災害・公共交通機関の麻痺・電車遅延</option>
+            </select>
+        </div>
+
+        <!-- ステップ2 -->
+        <div id="result-box" class="hidden card">
+            <h2>📋 2. 受付ルール・キャンセル料の判定</h2>
+            
+            <div id="fee-alert" class="alert">
+                <span class="alert-title" id="fee-title">判定結果</span>
+                <span class="alert-amount" id="fee-amount">0円</span>
+            </div>
+
+            <div class="action-box">
+                <span>医院からのお願い・お手入れ方法：</span>
+                <p id="action-text"></p>
+            </div>
+
+            <div id="contact-buttons"></div>
+        </div>
+    </div>
+
+    <footer>
+        ※本システムは医療体制維持とスムーズな診療環境提供のための案内ツールです。<br>
+        厚生労働省指針（保医発0327第7号）に基づくキャンセルポリシーを適用しています。
+    </footer>
+
+    <script>
+        function checkRule() {
+            var timeStatus = document.getElementById('time-status').value;
+            var reasonStatus = document.getElementById('reason-status').value;
+            var resultBox = document.getElementById('result-box');
+            
+            var feeAlert = document.getElementById('fee-alert');
+            var feeAmount = document.getElementById('fee-amount');
+            var actionText = document.getElementById('action-text');
+            var contactButtons = document.getElementById('contact-buttons');
+
+            if (!timeStatus || !reasonStatus) {
+                resultBox.className = 'hidden card';
+                return;
+            }
+
+            resultBox.className = 'card';
+
+            var fee = "キャンセル料：なし (0円)";
+            var backColor = "#ecfdf5"; var borderStyle = "1px solid #a7f3d0"; var textColor = "#065f46";
+            var action = "";
+            var buttons = "";
+
+            if (reasonStatus === 'disaster') {
+                fee = "キャンセル料：免除 (0円)";
+                backColor = "#eff6ff"; borderStyle = "1px solid #bfdbfe"; textColor = "#1e40af";
+                action = "規約に基づき、災害や公共交通機関の麻痺による変更はキャンセル料は発生しません。お気をつけて公式LINEまたはお電話にて、お仕事の合間などに遅延の旨をご一報ください。";
+                buttons = '<a href="tel:0666768033" class="btn btn-dark">📞 医院へ電話する (06-6676-8033)</a>';
+            } 
+            else if (reasonStatus === 'illness') {
+                fee = "キャンセル料：免除（考慮いたします）";
+                backColor = "#fffbp7"; borderStyle = "1px solid #fde68a"; textColor = "#92400e";
+                action = "急な発熱や体調不良の場合は考慮いたします。必ず事前にご一報が必要です。WEBからの変更はできませんので、診療時間内にお電話をいただくか、公式LINEにてご連絡ください。";
+                buttons = '<a href="tel:0666768033" class="btn btn-dark">📞 医院へ至急電話する</a>';
+            }
+            else if (reasonStatus === 'personal') {
+                if (timeStatus === 'normal') {
+                    fee = "キャンセル料：なし (0円)";
+                    backColor = "#ecfdf5"; borderStyle = "1px solid #a7f3d0"; textColor = "#065f46";
+                    action = "3日前までのご連絡のため、キャンセル料はかかりません。24時間対応のWEB予約システムから、ご自身で日時の変更・お手続きをお願いいたします。";
+                    buttons = '<a href="https://www.reina-dental.com/" class="btn btn-emerald">🌐 WEB予約システムを開く</a>';
+                } 
+                else if (timeStatus === 'tomorrow') {
+                    fee = "キャンセル料：なし（前営業日内のため）";
+                    backColor = "#fffbp7"; borderStyle = "1px solid #fde68a"; textColor = "#92400e";
+                    action = "前営業日の診療時間内のためキャンセル料はかかりませんが、WEBからの変更期限（3日前）を過ぎています。他の患者様へ枠を譲るため、今すぐお電話または公式LINEにて新しい日時をご相談ください。";
+                    buttons = '<a href="tel:0666768033" class="btn btn-dark">📞 診療時間内にお電話で変更</a>';
+                } 
+                else if (timeStatus === 'today-urgent') {
+                    fee = "キャンセル料：3,300円〜5,500円 (税込)";
+                    backColor = "#fff1f2"; borderStyle = "1px solid #fecdd3"; textColor = "#9f1239";
+                    action = "【当日・無断キャンセル対象】事前の相談のない当日変更は、他の患者様のご迷惑となるため、30分枠ごとに一律でキャンセル料が発生いたします。WEBやLINEでの申請はできません。必ず【お電話】にて今すぐご連絡ください。";
+                    buttons = '<a href="tel:0666768033" class="btn btn-rose">📞 今すぐお電話してください</a>';
+                }
+            }
+
+            feeAlert.style.backgroundColor = backColor;
+            feeAlert.style.border = borderStyle;
+            feeAlert.style.color = textColor;
+            feeAmount.innerText = fee;
+            actionText.innerHTML = action;
+            contactButtons.innerHTML = buttons;
+        }
+    </script>
+</body>
+</html>
